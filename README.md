@@ -96,7 +96,7 @@ Part of our code and k-shot datasets are borrowed from [code of KnowPrompt: Know
 @article{son2022grasp,
   title={GRASP: Guiding model with RelAtional Semantics using Prompt},
   author={Junyoung Son and 
-          Kim Jinsung and 
+          Jinsung Kim and 
           Jungwoo Lim and 
           Heuiseok Lim},
   journal={arXiv preprint arXiv:2208.12494},
