@@ -265,8 +265,6 @@ class GRASPTrainer(object):
                     
                     self.tb_writer.add_scalar('Training_loss', accu_loss / accu_cnt, global_iteration_step)
 
-            # self.tb_writer.add_scalar('Training_Accuracy', accu_cnt / len(self.train_dataset), epoch)
-
             # -------------------------------------------------------------------------
             #   ON EPOCH END  (checkpointing and validation)
             # -------------------------------------------------------------------------
@@ -381,10 +379,10 @@ class GRASPTrainer(object):
                 )['input_ids']
             ]
             for i, (prompt_id, semantic_id) in enumerate(zip(prompt_id_list, semantic_id_list)):
-                ratio_matrix = torch.tensor(list(TYPE_WORD_RATIOS.values())).unsqueeze(0) # 1 * 7
+                ratio_matrix = torch.tensor(list(TYPE_WORD_RATIOS.values())).unsqueeze(0)
                 ratio_matrix = ratio_matrix.to(self.device)
-                embedding_matrix = word_embeddings.weight[semantic_id_list].to(self.device) # 7 * hidden_size
-                word_embeddings.weight[prompt_id] = torch.mm(ratio_matrix, embedding_matrix).squeeze() # hidden_size
+                embedding_matrix = word_embeddings.weight[semantic_id_list].to(self.device)
+                word_embeddings.weight[prompt_id] = torch.mm(ratio_matrix, embedding_matrix).squeeze()
             assert torch.equal(self.model.bert_model.get_input_embeddings().weight, word_embeddings.weight)
             assert torch.equal(self.model.bert_model.get_input_embeddings().weight, self.model.bert_model.get_output_embeddings().weight)
 

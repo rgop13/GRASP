@@ -1,5 +1,7 @@
-## GRASP: Guiding model with RelAtional Semantics using Prompt
-## 0. Package Description
+# GRASP: Guiding model with RelAtional Semantics using Prompt
+This repository provides public source code of ["GRASP: Guiding model with RelAtional Semantics using Prompt](https://arxiv.org/abs/2208.12494)" for COLING 2022. <br> 
+
+# 0. Package Description
 ```
 ├─ config/: model config files for transformers
     ├─ GRASP-base.json
@@ -31,13 +33,13 @@
 ├─ README.md
 ```
 
-## 1. Environments
+# 1. Environments
 We conducted experiments on a server with a RTX A6000 (48GB) GPU.
 - python      (3.6.13)  
 - CUDA        (11.1)  
 - UbuntuOS 20.04.1 LTS
 
-## 2. Dependencies
+# 2. Dependencies
 - torch                    (1.8.1)
 - transformers             (4.7.0)
 - tqdm     (4.49.0)
@@ -49,7 +51,7 @@ We conducted experiments on a server with a RTX A6000 (48GB) GPU.
 - tensorboardX (2.4.1)
 - sklearn (0.0)
 
-## 3. Training/Evaluating for reproducing
+# 3. Training/Evaluating for reproducing
 If you want to reproduce our results, please follow our hyper-parameter settings and run the bash file with the following command.
 
 For the case of GRASP_base:
@@ -84,4 +86,20 @@ CUDA_VISIBLE_DEVICES=0 python train.py --config_file GRASP-base --save_dirpath c
 CUDA_VISIBLE_DEVICES=0 python train.py --config_file GRASP-base --save_dirpath checkpoint/grasp_base_16shot1 --data_dir data/k-shot/16-1 --mode train
 CUDA_VISIBLE_DEVICES=0 python train.py --config_file GRASP-base --save_dirpath checkpoint/grasp_base_16shot1 --data_dir data/k-shot/16-1 --mode evaluation
 ...
+```
+
+# Acknowledgement
+Part of our code and k-shot datasets are borrowed from [code of KnowPrompt: Knowledge-aware Prompt-tuning with Synergistic Optimization for Relation Extraction](https://github.com/zjunlp/KnowPrompt), many thanks.
+
+# Citation
+```angular2html
+@article{son2022grasp,
+  title={GRASP: Guiding model with RelAtional Semantics using Prompt},
+  author={Junyoung Son and 
+          Kim Jinsung and 
+          Jungwoo Lim and 
+          Heuiseok Lim},
+  journal={arXiv preprint arXiv:2208.12494},
+  year={2022}
+}
 ```
