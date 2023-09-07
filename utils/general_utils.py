@@ -1,6 +1,6 @@
 import logging
-import torch
 import math
+import torch
 from torch import nn
 from transformers import (
     BertTokenizer,
@@ -18,8 +18,6 @@ from data_reader import (
     GRASPv2Processor,
     DreProcessor
 )
-
-
 from models import GRASPModel, GRASPModelMinit
 
 
@@ -35,11 +33,13 @@ def move_to_cuda(maybe_tensor, device):
         return [move_to_cuda(x, device) for x in maybe_tensor]
     else:
         return maybe_tensor
-    
+
+
 class GELU(nn.Module):
     def forward(self, x):
         return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
- 
+
+
 MODEL_CLASSES = {
     "GRASP": GRASPModel,
     "GRASP-minit": GRASPModelMinit,
@@ -73,4 +73,3 @@ TYPE_WORD_RATIOS = {
     "date": 0.0021743579248951193,
     "age": 0.0021743579248951193,
 }
-

@@ -1,9 +1,9 @@
-import six
-import re
-import copy
-import pickle
-import math
 import collections
+import copy
+import math
+import pickle
+import re
+import six
 import torch
 from copy import deepcopy
 from torch import nn
@@ -44,4 +44,3 @@ def convert_to_unicode(text):
             raise ValueError("Unsupported string type: %s" % (type(text)))
     else:
         raise ValueError("Not running on Python2 or Python 3?")
-
