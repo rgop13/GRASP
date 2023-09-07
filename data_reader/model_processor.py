@@ -1,17 +1,16 @@
-import os
 import logging
 import numpy as np
-
+import os
 import torch
 from torch.utils.data import Dataset
-
 from tqdm import tqdm
-from .data_processor import DreModelProcessor
+
 from utils.data_utils import APMTokenize
 from utils.data_utils import (
     get_target_mask,
     tokenize_vanilla
 )
+from .data_processor import DreModelProcessor
 
 logger = logging.getLogger()
 
@@ -38,15 +37,15 @@ class MLMDataset(Dataset):
             cached_file_name = f"{args.model}-{args.task_desc}-{mode}-{bert_model}-{args.max_seq_len}-{is_f1c}-{is_apm}-{data_version}"
 
         cached_features_file = os.path.join(args.data_dir, args.task, "cached", cached_file_name)
-        
+
         self.features = self.model_processor.cache_load_examples(cached_features_file, self.mode)
         print(f"Total number of features for {mode}ing: {len(self.features)}")
         self.pad_token = self.tokenizer.pad_token_id
         print(f"Pad Token index: {self.pad_token}")
-    
+
     def __len__(self):
         return len(self.features)
-    
+
     def __getitem__(self, index):
         cur_example = self.features[index]
         feature = dict()
@@ -58,13 +57,13 @@ class MLMDataset(Dataset):
         feature["attention_mask"] = torch.tensor(cur_example.attention_mask).long()
         feature["labels"] = torch.tensor(cur_example.labels).long()
         feature["rel_id"] = cur_example.rel_id
-        
+
         return feature
-    
+
     def collate_fn(self, batch):
         merged_batch = {key: [d[key] for d in batch] for key in batch[0]}
         max_src = max([len(e) for e in merged_batch["input_ids"]])
-        
+
         for key in merged_batch:
             if key in ['input_ids', 'attention_mask', 'token_type_ids']:
                 for batch_idx, features in enumerate(merged_batch[key]):
@@ -217,7 +216,7 @@ class PromptTuningProceesor(DreModelProcessor):
 
     def _truncate_seq_tuple(self, tokens_a, tokens_b, tokens_c, max_length):
         """Truncates a sequence tuple in place to the maximum length."""
-    
+
         # This is a simple heuristic which will always truncate the longer sequence
         # one token at a time. This makes more sense than truncating an equal percent
         # of tokens from each, since if one sequence is very short then each token
@@ -253,9 +252,9 @@ class PromptTuningProceesor(DreModelProcessor):
                      [self.tokenizer.convert_tokens_to_ids("[unused4]")] + \
                      [self.tokenizer.convert_tokens_to_ids("[subj]")]
 
-        input_ids += [self.tokenizer.convert_tokens_to_ids("[unused7]")] +\
-                     [self.tokenizer.convert_tokens_to_ids("[unused8]")] +\
-                     [self.tokenizer.mask_token_id] +\
+        input_ids += [self.tokenizer.convert_tokens_to_ids("[unused7]")] + \
+                     [self.tokenizer.convert_tokens_to_ids("[unused8]")] + \
+                     [self.tokenizer.mask_token_id] + \
                      [self.tokenizer.convert_tokens_to_ids("[unused9]")]
 
         input_ids += [self.tokenizer.convert_tokens_to_ids("[obj]")] + \
@@ -297,7 +296,7 @@ class PromptTuningProceesor(DreModelProcessor):
         inputs["o_id"] = example["o_id"]
 
         return inputs
-    
+
     def convert_data_to_features(self, encoded_datas, typ):
         """Creates examples for the training and dev sets. / json files"""
         features = []
@@ -315,7 +314,7 @@ class PromptTuningProceesor(DreModelProcessor):
                 rel_id=inputs["rel_id"],
                 s_id=inputs["s_id"],
                 o_id=inputs["o_id"],
-                ))
+            ))
             if i < 3:
                 logger.info("Feature Examples...")
                 logger.info("{}th Feature input_ids: {}".format(i, features[-1].input_ids))

@@ -36,7 +36,8 @@ def convert_to_unicode(text):
 
 
 class InputExample(object):
-    def __init__(self, dial_id, dialog, subject, object, rel_labels, rel_id, triggers, s_id=None, o_id=None, relation=None):
+    def __init__(self, dial_id, dialog, subject, object, rel_labels, rel_id, triggers, s_id=None, o_id=None,
+                 relation=None):
         self.dial_id = dial_id
         self.dialog = dialog
         self.subject = subject
@@ -79,16 +80,17 @@ class DreProcessor(DataProcessor):
             logger.info("[DreProcessor] Note that this setting is \'conversational setting\' for F1c evaluation.")
         logger.info("[DreProcessor/DRE_{}_dataset] read_data is done! size: {}".format(typ, len(dial_data)))
         for i in range(3):
-            logger.info("[DreProcessor/DRE_{}_dataset] Example_{} ------*\nDial_id:{}\nDialog:{}\nrel_id:{}\nlabels:{}\nSubject:{}\nObject:{}".format(
-                typ,
-                i,
-                dial_data[i].dial_id,
-                dial_data[i].dialog,
-                dial_data[i].rel_id,
-                dial_data[i].rel_labels,
-                dial_data[i].subject,
-                dial_data[i].object,
-            ))
+            logger.info(
+                "[DreProcessor/DRE_{}_dataset] Example_{} ------*\nDial_id:{}\nDialog:{}\nrel_id:{}\nlabels:{}\nSubject:{}\nObject:{}".format(
+                    typ,
+                    i,
+                    dial_data[i].dial_id,
+                    dial_data[i].dialog,
+                    dial_data[i].rel_id,
+                    dial_data[i].rel_labels,
+                    dial_data[i].subject,
+                    dial_data[i].object,
+                ))
         return dial_data
 
     def get_data(self, typ):
@@ -102,9 +104,9 @@ class DreProcessor(DataProcessor):
         else:
             with open(os.path.join(self.args.data_dir, "test.json"), "r", encoding="utf-8") as reader:
                 examples = json.load(reader)
-                
+
         return examples
-    
+
     def create_input_example(self, data, dial_id, j):
         rel_labels = []
         triggers = []
@@ -148,8 +150,9 @@ class DreProcessor(DataProcessor):
                 rel_labels += [1]
             else:
                 rel_labels += [0]
-        for l in range(1, len(data[0])+1):
-            dialogue, subject, object = rename(' '.join(data[0][:l]).lower(), data[1][j]["x"].lower(), data[1][j]["y"].lower())
+        for l in range(1, len(data[0]) + 1):
+            dialogue, subject, object = rename(' '.join(data[0][:l]).lower(), data[1][j]["x"].lower(),
+                                               data[1][j]["y"].lower())
             d = InputExample(
                 dial_id=dial_id,
                 dialog=dialogue,
@@ -165,7 +168,14 @@ class DreProcessor(DataProcessor):
         return d_list
 
     def get_relations(self):
-        return ["per:positive_impression", "per:negative_impression", "per:acquaintance", "per:alumni", "per:boss", "per:subordinate", "per:client", "per:dates", "per:friends", "per:girl/boyfriend", "per:neighbor", "per:roommate", "per:children", "per:other_family", "per:parents", "per:siblings", "per:spouse", "per:place_of_residence", "per:place_of_birth", "per:visited_place", "per:origin", "per:employee_or_member_of", "per:schools_attended", "per:works", "per:age", "per:date_of_birth", "per:major", "per:place_of_work", "per:title", "per:alternate_names", "per:pet", "gpe:residents_of_place", "gpe:births_in_place", "gpe:visitors_of_place", "org:employees_or_members", "org:students"]
+        return ["per:positive_impression", "per:negative_impression", "per:acquaintance", "per:alumni", "per:boss",
+                "per:subordinate", "per:client", "per:dates", "per:friends", "per:girl/boyfriend", "per:neighbor",
+                "per:roommate", "per:children", "per:other_family", "per:parents", "per:siblings", "per:spouse",
+                "per:place_of_residence", "per:place_of_birth", "per:visited_place", "per:origin",
+                "per:employee_or_member_of", "per:schools_attended", "per:works", "per:age", "per:date_of_birth",
+                "per:major", "per:place_of_work", "per:title", "per:alternate_names", "per:pet",
+                "gpe:residents_of_place", "gpe:births_in_place", "gpe:visitors_of_place", "org:employees_or_members",
+                "org:students"]
 
     def get_labels(self):
         """
@@ -193,7 +203,7 @@ class DreModelProcessor(object):
                     os.path.join(self.args.data_dir, self.args.task), typ)
                 encoded_datas = self.get_encoded_data(dre_datas, typ)
                 features = self.convert_data_to_features(encoded_datas, typ)
-        
+
                 print("Saving features into cached file %s", cached_features_file)
                 torch.save(features, cached_features_file)
             except ValueError:

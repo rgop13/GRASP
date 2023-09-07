@@ -1,19 +1,20 @@
 import copy
-import os
 import csv
 import json
-import pickle
 import logging
-from tqdm import tqdm
-
-import torch
 import numpy as np
-from torch.utils.data import DataLoader
-from utils.general_utils import ADVISOR_DATASET_CLASSES
+import os
+import pickle
+import torch
 from collections import defaultdict, Counter
 from sklearn.metrics import f1_score, classification_report
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from utils.general_utils import ADVISOR_DATASET_CLASSES
 
 logger = logging.getLogger()
+
 
 class Evaluation(object):
     def __init__(self, args, tokenizer, data_processor, model_processor):

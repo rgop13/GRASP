@@ -1,25 +1,23 @@
-import os
-import sys
-import glob
-import pickle
 import argparse
-from attrdict import AttrDict
-
-from setproctitle import setproctitle
-
+import glob
 import json
 import logging
-from datetime import datetime
 import numpy as np
-from tqdm import tqdm
-from pathlib import Path
-
+import os
+import pickle
+import sys
 import torch
 import torch.nn as nn
+from attrdict import AttrDict
 from copy import deepcopy
-from torch.utils.data import DataLoader
+from datetime import datetime
+from pathlib import Path
+from setproctitle import setproctitle
 from tensorboardX import SummaryWriter
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
+
 from evaluate import Evaluation
 from utils.eval_utils import CheckpointManager, load_checkpoint
 from utils.general_utils import (
@@ -33,7 +31,7 @@ from utils.general_utils import (
 
 
 class GRASPTrainer(object):
-    
+
     def __init__(self, args):
         self.args = args
         setproctitle(self.args.process_name)
@@ -61,15 +59,15 @@ class GRASPTrainer(object):
         torch.cuda.manual_seed_all(args.random_seed)
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
-        
+
         self.device = torch.device("cuda:" + str(self.args.gpu_ids[0]) if torch.cuda.is_available() else "cpu")
-        
+
         self._logger.info("Training/evaluation parameters {}".format(self.args))
         self.build_dataloader()
         self.build_model()
         self.setup_training()
         self.evaluation = Evaluation(args, self.tokenizer, self.processor, self.model_processor)
-    
+
     def build_dataloader(self):
         # =============================================================================
         #   SETUP DATASET, DATALOADER
@@ -80,7 +78,7 @@ class GRASPTrainer(object):
         self.processor = DATA_PROCESSORS[self.args.task](self.args)
         self.model_processor = ADVISOR_MODEL_PROCESSORS[self.args.model](self.args, self.tokenizer, self.processor, 4)
         self.train_dataset = ADVISOR_DATASET_CLASSES[self.args.model](self.args, self.tokenizer, self.processor,
-                                                              self.model_processor, mode="train")
+                                                                      self.model_processor, mode="train")
         self.train_dataloader = DataLoader(
             self.train_dataset,
             batch_size=self.args.batch_size,
@@ -96,7 +94,7 @@ class GRASPTrainer(object):
             num_workers=self.args.cpu_workers,
             collate_fn=self.train_dataset.collate_fn
         )
-        
+
         self._logger.info(
             """
             # -------------------------------------------------------------------------
@@ -104,7 +102,7 @@ class GRASPTrainer(object):
             # -------------------------------------------------------------------------
             """
         )
-    
+
     def build_model(self):
         self.model = MODEL_CLASSES[args.model](self.args, self.tokenizer, self.device, self.model_processor)
         self.model.to(self.device)
@@ -128,11 +126,11 @@ class GRASPTrainer(object):
 
         tr_class_ids_list = self.model_processor.get_tr_class_ids_list()
         self.model.prepare_verbalizer(rel_ids_list, tr_class_ids_list)
-        
+
         # Use Multi-GPUs
         if -1 not in self.args.gpu_ids and len(self.args.gpu_ids) > 1:
             self.model = nn.DataParallel(self.model, self.args.gpu_ids)
-        
+
         self._logger.info(
             """
             # -------------------------------------------------------------------------
@@ -140,14 +138,14 @@ class GRASPTrainer(object):
             # -------------------------------------------------------------------------
             """
         )
-    
+
     def setup_training(self):
         # =============================================================================
         #   optimizer / scheduler
         # =============================================================================
-        
+
         self.iterations = len(self.train_dataset) // self.args.virtual_batch_size
-        
+
         no_decay = ['bias', 'LayerNorm.weight']
         param_optimizer = self.model.named_parameters()
         optimizer_grouped_parameters = [
@@ -159,7 +157,7 @@ class GRASPTrainer(object):
         self.optimizer = AdamW(
             optimizer_grouped_parameters, lr=self.args.learning_rate, eps=self.args.adam_epsilon
         )
-        
+
         if self.args.scheduler == "lambda":
             lr_lambda = lambda epoch: self.args.lr_decay ** epoch
             self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=lr_lambda)
@@ -169,7 +167,7 @@ class GRASPTrainer(object):
                 self.optimizer, num_warmup_steps=self.args.warmup_steps,
                 num_training_steps=num_training_steps
             )
-        
+
         # =============================================================================
         #   checkpoint_manager / tensorboard summary_writer
         # =============================================================================
@@ -177,9 +175,9 @@ class GRASPTrainer(object):
 
         tb_prefix = self.args.model_type + "_" + self.args.task_desc
         self.tb_writer = SummaryWriter(log_dir=f'./runs/{self.args.task}/' + timestamp + tb_prefix, comment=tb_prefix)
-        
+
         self.checkpoint_manager = CheckpointManager(self.model, self.optimizer, self.save_dirpath)
-        
+
         # If loading from checkpoint, adjust start epoch and load parameters.X
         if self.args.load_pthpath == "":
             self.start_epoch = 1
@@ -198,7 +196,7 @@ class GRASPTrainer(object):
             self.optimizer.load_state_dict(optimizer_state_dict)
             self.previous_model_path = self.args.load_pthpath
             self._logger.info("Loaded model from {}".format(self.args.load_pthpath))
-        
+
         self._logger.info(
             """
             # -------------------------------------------------------------------------
@@ -206,22 +204,23 @@ class GRASPTrainer(object):
             # -------------------------------------------------------------------------
             """
         )
-    
+
     def train(self):
-        
+
         start_time = datetime.now().strftime('%H:%M:%S')
         self._logger.info("Start train model at {}".format(start_time))
-        
+
         train_begin = datetime.utcnow()
         global_iteration_step = 0
         early_stop_count = self.args.early_stop_count
         best_dev_f1 = -1.0
-        
+
         # evaluation results writer
         self.eval_result_writer = open(os.path.join(self.checkpoint_manager.ckpt_dirpath, "eval_results.txt"), "w",
                                        encoding='utf-8')
-        self._logger.info("Saving Evaluation Results in {}".format(os.path.join(self.checkpoint_manager.ckpt_dirpath, "eval_results.txt")))
-        
+        self._logger.info("Saving Evaluation Results in {}".format(
+            os.path.join(self.checkpoint_manager.ckpt_dirpath, "eval_results.txt")))
+
         self._logger.info("Total number of iterations per epoch: {}".format(self.iterations))
         self._logger.info("Start Training...")
 
@@ -238,7 +237,7 @@ class GRASPTrainer(object):
                 for b_k in batch:
                     if b_k in ["input_ids", "token_type_ids", "attention_mask", "labels", "tr_labels"]:
                         batch[b_k] = batch[b_k].to(self.device)
-                
+
                 loss, _ = self.model(**batch)
                 accu_loss += loss.item()
                 accu_cnt += 1
@@ -246,13 +245,13 @@ class GRASPTrainer(object):
 
                 if (self.args.virtual_batch_size == accu_batch) or (
                         batch_idx == (len(self.train_dataset) // self.args.batch_size)):  # last batch
-                    
+
                     nn.utils.clip_grad_norm_(self.model.parameters(), self.args.max_gradient_norm)
                     self.optimizer.step()
                     if self.args.scheduler == "warmup":
                         self.scheduler.step()
                     self.optimizer.zero_grad()
-                    
+
                     accu_batch = 0
                     global_iteration_step += 1
                     description = "[{}][Epoch: {:3d}][Iter: {:6d}][Loss: {:6f}][lr: {:7f}]".format(
@@ -260,9 +259,9 @@ class GRASPTrainer(object):
                         epoch,
                         global_iteration_step, accu_loss / accu_cnt,
                         self.optimizer.param_groups[0]['lr'])
-                    
+
                     tqdm_batch_iterator.set_description(description)
-                    
+
                     self.tb_writer.add_scalar('Training_loss', accu_loss / accu_cnt, global_iteration_step)
 
             # -------------------------------------------------------------------------
@@ -276,8 +275,8 @@ class GRASPTrainer(object):
                 typ='dev',
             )
 
-
-            self.eval_result_writer.write(f"dev {epoch} | dev precision: {dev_precision} | dev recall: {dev_recall} | dev f1: {dev_f_1} | dev rcd f1: {dev_rcd_f1} | dev Trigger f1: {dev_tr_f1}\n")
+            self.eval_result_writer.write(
+                f"dev {epoch} | dev precision: {dev_precision} | dev recall: {dev_recall} | dev f1: {dev_f_1} | dev rcd f1: {dev_rcd_f1} | dev Trigger f1: {dev_tr_f1}\n")
             self.tb_writer.add_scalar('Dev_Precision', dev_precision, epoch)
             self.tb_writer.add_scalar('Dev_Recall', dev_recall, epoch)
             self.tb_writer.add_scalar('Dev_F1', dev_f_1, epoch)
@@ -315,7 +314,7 @@ class GRASPTrainer(object):
             self.model.module.load_state_dict(model_state_dict)
         else:
             self.model.load_state_dict(model_state_dict)
-    
+
     def evaluate(self):
         start_time = datetime.now().strftime('%H:%M:%S')
         if self.args.conversational_setting:
@@ -367,8 +366,10 @@ class GRASPTrainer(object):
             continuous_relation_ids_list = [
                 a[0] for a in self.tokenizer(self.model_processor.class_list, add_special_tokens=False)['input_ids']
             ]
-            for i, (continuous_relation_ids, relation_ids) in enumerate(zip(continuous_relation_ids_list, relation_ids_list)):
-                word_embeddings.weight[continuous_relation_ids] = torch.mean(word_embeddings.weight[relation_ids], dim=0)
+            for i, (continuous_relation_ids, relation_ids) in enumerate(
+                    zip(continuous_relation_ids_list, relation_ids_list)):
+                word_embeddings.weight[continuous_relation_ids] = torch.mean(word_embeddings.weight[relation_ids],
+                                                                             dim=0)
 
             prompt_id_list = [
                 a[0] for a in self.tokenizer(self.model_processor.prompt_list, add_special_tokens=False)['input_ids']
@@ -384,10 +385,11 @@ class GRASPTrainer(object):
                 embedding_matrix = word_embeddings.weight[semantic_id_list].to(self.device)
                 word_embeddings.weight[prompt_id] = torch.mm(ratio_matrix, embedding_matrix).squeeze()
             assert torch.equal(self.model.bert_model.get_input_embeddings().weight, word_embeddings.weight)
-            assert torch.equal(self.model.bert_model.get_input_embeddings().weight, self.model.bert_model.get_output_embeddings().weight)
+            assert torch.equal(self.model.bert_model.get_input_embeddings().weight,
+                               self.model.bert_model.get_output_embeddings().weight)
 
         return continuous_relation_ids_list
-    
+
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description="Multiple Choice (PyTorch)")
@@ -418,7 +420,7 @@ if __name__ == '__main__':
         default=None,
         help="Whether you want to enable the model to a conversational setting."
     )
-    
+
     parsed_args = arg_parser.parse_args()
 
     with open(os.path.join(parsed_args.config_dir, "{}.json".format(parsed_args.config_file))) as f:
@@ -426,7 +428,7 @@ if __name__ == '__main__':
         args.update({"root_dirpath": parsed_args.root_dirpath})
         args.update({"load_pthpath": parsed_args.load_pthpath})
         args.update({"save_dirpath": parsed_args.save_dirpath})
-        if parsed_args.task is not None:    # dre, tacred, docred
+        if parsed_args.task is not None:  # dre, tacred, docred
             args.update({"task": parsed_args.task})
         if parsed_args.task_desc is not None:
             args.update({"task_desc": parsed_args.task_desc})
