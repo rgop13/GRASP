@@ -1,12 +1,13 @@
-from copy import deepcopy
-
 import torch
 import torch.nn as nn
+from copy import deepcopy
 from transformers import (
     AutoModelForMaskedLM,
 )
+
 from utils.bert_utils import multilabel_categorical_crossentropy
 from .GRASP import GRASPModel
+
 
 class GRASPModelMinit(GRASPModel):
 
@@ -34,5 +35,7 @@ class GRASPModelMinit(GRASPModel):
         with torch.no_grad():
             word_embeddings = self.bert_model.get_input_embeddings()
             continuous_class_ids_list = self.model_processor.project_to_tr_class_idx
-            for i, (continuous_tr_class_ids, class_init_ids) in enumerate(zip(continuous_class_ids_list, class_init_ids_list)):
-                word_embeddings.weight[continuous_tr_class_ids] = torch.mean(word_embeddings.weight[class_init_ids], dim=0)
+            for i, (continuous_tr_class_ids, class_init_ids) in enumerate(
+                    zip(continuous_class_ids_list, class_init_ids_list)):
+                word_embeddings.weight[continuous_tr_class_ids] = torch.mean(word_embeddings.weight[class_init_ids],
+                                                                             dim=0)

@@ -1,10 +1,10 @@
-from copy import deepcopy
-
 import torch
 import torch.nn as nn
+from copy import deepcopy
 from transformers import (
     AutoModelForMaskedLM,
 )
+
 from utils.bert_utils import multilabel_categorical_crossentropy
 
 
@@ -39,13 +39,14 @@ class GRASPModel(nn.Module):
             forward_args.pop("token_type_ids")
         outputs = self.bert_model(**forward_args, return_dict=True)
 
-        tr_logits = outputs.logits     # [bsz, max_seq, model_vocab_size]
+        tr_logits = outputs.logits  # [bsz, max_seq, model_vocab_size]
         tr_logits = self.project_to_tr_classes(tr_logits)  # [bsz, max_seq, 4]
         tr_loss = self.tr_loss_func(tr_logits.view(-1, len(self.project_to_tr_class_idx)), tr_labels.view(-1))
         rcd_scores = self.softmax(tr_logits)  # [bsz, seq, 4]
         rcd_preds = torch.argmax(rcd_scores, dim=-1)  # [bsz, max_seq] 0, 1, 2, 3(trigger)
 
-        trigger_masks = (rcd_preds == self.model_processor.tr_class_to_id[self.model_processor.tr_classes[-1]]).to(self.device)
+        trigger_masks = (rcd_preds == self.model_processor.tr_class_to_id[self.model_processor.tr_classes[-1]]).to(
+            self.device)
 
         rel_input_ids, rel_token_type_ids, rel_attention_masks = self._reconstruct_input_ids(
             input_ids, token_type_ids, attention_mask, trigger_masks
@@ -103,7 +104,6 @@ class GRASPModel(nn.Module):
         rel_attention_masks = torch.tensor(new_attention_masks).long().to(self.device)
         return rel_input_ids, rel_token_type_ids, rel_attention_masks
 
-
     def set_rel_verbalizer(self, rel_ids):
         if rel_ids is not None:
             self.project_to_rel_idx = torch.tensor(rel_ids).to(self.device)
@@ -127,7 +127,8 @@ class GRASPModel(nn.Module):
         rcd_scores = self.softmax(tr_logits)  # [bsz, seq, 4]
         rcd_preds = torch.argmax(rcd_scores, dim=-1)  # [bsz, max_seq]
 
-        trigger_masks = (rcd_preds == self.model_processor.tr_class_to_id[self.model_processor.tr_classes[-1]]).to(self.device)
+        trigger_masks = (rcd_preds == self.model_processor.tr_class_to_id[self.model_processor.tr_classes[-1]]).to(
+            self.device)
         rel_input_ids, rel_token_type_ids, rel_attention_masks = self._reconstruct_input_ids(
             input_ids, token_type_ids, attention_mask, trigger_masks
         )
@@ -174,9 +175,9 @@ class GRASPModel(nn.Module):
             for j, (token_pred, token_label) in enumerate(zip(batch_pred, batch_label)):
                 if token_label != -100:
                     true_preds.append(  # 0,1,2,3
-                        self.model_processor.pred_mapping[token_pred]   # int (class_id) to string
+                        self.model_processor.pred_mapping[token_pred]  # int (class_id) to string
                     )
                     true_labels.append(
-                        self.model_processor.label_mapping[token_label] # int (class_id) to string
+                        self.model_processor.label_mapping[token_label]  # int (class_id) to string
                     )
         return true_preds, true_labels
